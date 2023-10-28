@@ -21,15 +21,15 @@ variable  "X" { //2 values
 	property "position = (145, 36)" ;
 }
 probability (  "A" ) { //1 variable(s) and 2 values
-	table 0.1 0.9 ;
+	table -1 -1 ;
 }
 probability (  "X"  "A"  ) { //2 variable(s) and 8 values
-	table 0.2  0.1 0.8 0.9 ;
+	table -1 -1 -1 -1 ;
 }
 probability (  "C"  ) { //2 variable(s) and 8 values
-	table  0.7 0.3 ;
+	table  -1 -1 ;
 }
 
 probability (  "B" "X" "C"  ) { //2 variable(s) and 8 values
-	table  0.6 0.5 0.4 0.2 0.4 0.5 0.6 0.8 ;
+	table  -1 -1 -1 -1 -1 -1 -1 -1 ;
 }

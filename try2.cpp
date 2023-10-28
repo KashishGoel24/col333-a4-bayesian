@@ -9,9 +9,12 @@
 
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
 using namespace std;
-#define vec_print(v) for(int rnd_i = 0 ; rnd_i < v.size() ; rnd_i ++) {cout<<v[rnd_i]<<" " ;} cout<<endl  ;
+#define vec_print(v) {cout<<#v<<" : " ;for(int rnd_i = 0 ; rnd_i < v.size() ; rnd_i ++) {cout<<v[rnd_i]<<" " ;} cout<<endl  ;}
+#define what_is(x) {cout<<#x<<" is "<<x<<endl ;}
+#define check_here(x) {cout<<"Here it works "<<x<<endl ;}
 // Our graph consists of a list of nodes where each node is represented as follows:
 bool comments = false ;
+bool display = true ; 
 class Graph_Node{
 
 private:
@@ -21,18 +24,25 @@ private:
 	int nvalues;  // Number of categories a variable represented by this node can take
 	vector<string> values; // Categories of possible values
 	vector<float> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
+    vector<float> sum_cpt ;
+    float n_const ;
 
 public:
 	// Constructor- a node is initialised with its name and its categories
     Graph_Node(string name,int n,vector<string> vals)
-	{
+	{   
 		Node_Name=name;
-	
 		nvalues=n;
 		values=vals;
-		
-
 	}
+
+    void set_sum_cpt(){
+        n_const = CPT.size() ;
+        for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(1) ;
+
+
+    }
+
 	string get_name()
 	{
 		return Node_Name;
@@ -77,6 +87,14 @@ public:
         }
         Children.push_back(new_child_index);
         return 1;
+    }
+    void update_sum_cpt(int index_change, float val_change  ){
+        if (comments) what_is(sum_cpt.size()) ;
+        sum_cpt[index_change]+=val_change ;
+        n_const += val_change ; 
+    }
+    void rewrite_cpt(){
+        for (int i=0 ; i < sum_cpt.size() ; i++) CPT[i] = sum_cpt[i]/n_const ;
     }
 
 
@@ -239,6 +257,7 @@ network read_network(string filename)
     				}
                     
                     listIt->set_CPT(curr_CPT);
+                    listIt->set_sum_cpt() ;
 
 
      		}
@@ -259,7 +278,6 @@ network read_network(string filename)
   	
   	return Alarm;
 }
-
 
 vector<vector<string>> parse_data(string filename){
 	
@@ -297,7 +315,6 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
     vector<int> nvalues_parents ; // total number of n values of parents 
     vector<float> cpt_X = X->get_CPT()  ; 
     vector<float> x_prob_table ; // this is to be ultimately returned
-
     for (int i=0 ; i < parents_size ; i++){
         // this loop fills in the parents_index and nvalues_parents 
         string parent = parents_X[i] ; 
@@ -305,9 +322,9 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
         list<Graph_Node>::iterator parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
         vector<string> all_possible_values = parent_node->get_values() ; 
         int ind = -1 ;
-        for (int i=0 ; i < all_possible_values.size() ; i++){
-            if (val_parent == all_possible_values[i]) {
-                ind = i  ;
+        for (int ii=0 ; ii < all_possible_values.size() ; ii++){
+            if (val_parent == all_possible_values[ii]) {
+                ind = ii  ;
                 break ; }
         }
         parents_index.push_back(ind) ;
@@ -334,7 +351,7 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
 
     for (int value_x=0 ; value_x < nvalues_x ; value_x++){
         // this is for a given value of x  
-        float prob_x_spec = cpt_X[index_in_cpt*nvalues_x + value_x] ; // this is all the data from the parents 
+        float prob_x_spec = cpt_X[index_in_cpt +running_product* value_x] ; // this is all the data from the parents 
         // cout<<prob_x_spec
         if (comments) cout<<"Here it works 21"<<endl;
 
@@ -350,7 +367,7 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
             for (int j=0 ; j < child_parents_size ; j++){
                 // this is just for filling the indices
                 if (childs_parents[j]==x_name) {
-                    child_parent_value_indices.push_back(i) ;
+                    child_parent_value_indices.push_back(value_x) ;
                     nvalues_child_parents.push_back(nvalues_x) ;
                     }
                 else { 
@@ -389,19 +406,28 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
                     break ; 
                 }
             }
-            if (comments) cout<<index_in_child_cpt<<endl ;
+            if (comments) cout<<"index_in_child_cpt is "<<index_in_child_cpt<<endl ;
             if (comments) cout<<"Here it works 10"<<endl;
             if (comments) cout<<"parents size is "<<child_parents_size<<endl ;
             // cout<<
-            for (int cnt_1  = child_parents_size ; cnt_1>=0 ;cnt_1-- ){
+            int index_random  = 0 ;
+            if (comments) vec_print(nvalues_child_parents) ;
+            if (comments) vec_print(child_parent_value_indices);
+            for (int cnt_1  = child_parents_size-1 ; cnt_1>=0 ;cnt_1-- ){
                 if (comments) cout<<"cnt 1 is "<<cnt_1<<endl ;
-                index_in_child_cpt+= running_stuff_mult*child_parent_value_indices[cnt_1] ;
+                index_random += running_stuff_mult*child_parent_value_indices[cnt_1] ;
                 running_stuff_mult*= nvalues_child_parents[cnt_1] ;
+                if (comments) what_is(running_stuff_mult) ;
+                if (comments) what_is(index_random);
             }
+            if (comments) what_is(running_stuff_mult) ;
 
             if (comments) cout<<"Here it works 11"<<endl;
+
             vector<float> child_cpt = child->get_CPT() ;
-            prob_x_spec *= child_cpt[index_in_child_cpt] ;
+            if (comments) what_is(index_in_child_cpt)
+            if (comments) what_is(index_random);
+            prob_x_spec *= child_cpt[index_in_child_cpt*running_stuff_mult +index_random] ;
 
             
 
@@ -414,6 +440,7 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
     }
 
     // now normalize the prob table 
+    if (comments) vec_print(x_prob_table) ;
     float norm_cnst = 0 ; 
     for (int i=0 ; i< x_prob_table.size() ; i++) norm_cnst+= x_prob_table[i] ;
     for (int i=0 ; i<x_prob_table.size() ; i++) x_prob_table[i] = x_prob_table[i]/norm_cnst ;
@@ -423,28 +450,103 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
     // X.get_CPT();
 }
 
+void update_cpt(float sample_weight , network* Alarm, unordered_map<string,string> given_values){
+    int size_net = Alarm->netSize() ;
+    if (comments) what_is(size_net) ;
+    for (int node_number =0 ; node_number < size_net ; node_number++){
+        list<Graph_Node>::iterator X_update = Alarm->get_nth_node(node_number);
+        int number_n_values_x_update = X_update->get_nvalues();
+        vector<string> n_values_x_update = X_update->get_values();
+        int index_val = -1;
+        for (int i = 0 ; i < number_n_values_x_update; i++){
+            if (n_values_x_update[i] == given_values[X_update->get_name()]){
+                index_val = i;
+                break;
+            }
+        }
+        if (comments) check_here(2)  ;
+        vector<string> parents_x = X_update->get_Parents() ;
+
+
+        int parents_size = parents_x.size() ; 
+        vector<int> parents_index ; // stores what indices values do the parents value are
+        vector<int> nvalues_parents ; // total number of n values of parents 
+        for (int i=0 ; i < parents_size ; i++){
+            // this loop fills in the parents_index and nvalues_parents 
+            string parent = parents_x[i] ; 
+            string val_parent   = given_values[parent]  ; // this is the given value of parent
+            list<Graph_Node>::iterator parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
+            vector<string> all_possible_values = parent_node->get_values() ; 
+            int ind = -1 ;
+            for (int ii=0 ; ii < all_possible_values.size() ; ii++){
+                if (val_parent == all_possible_values[ii]) {
+                    ind = ii  ;
+                    break ; }
+            }
+            parents_index.push_back(ind) ;
+            nvalues_parents.push_back(parent_node->get_nvalues()) ;
+        
+        }
+        if (comments) check_here(3)  ;
+
+        int index_in_cpt = 0 ; // this is the index in cpt that is to be used
+        int running_product = 1 ; 
+        for (int i= parents_size-1 ; i >=0 ; i--){
+            index_in_cpt += parents_index[i]*running_product ; 
+            running_product *= nvalues_parents[i] ;
+        }
+        int final_index  = index_in_cpt + running_product * index_val ; 
+        if (comments) check_here(4)  ;
+        int size_cpt = X_update->get_CPT().size() ;
+        if (comments) what_is(size_cpt) ;
+        if (comments) what_is(final_index) ;
+        X_update->update_sum_cpt(final_index, sample_weight);
+        if (comments) check_here(5)  ;
+        X_update->rewrite_cpt() ;
+
+    }
+
+}
+
+
 int main()
 {
 	network Alarm;
-	Alarm=read_network("small_alarm.bif");
-    vector<vector<string>> data  = parse_data("small_records.dat"); 
+	Alarm=read_network("alarm.bif");
+    vector<vector<string>> data  = parse_data("records.dat"); 
 
 
     //isme data[0] ki jagah data[i] kardena
-    vector<string> data_row = data[0]; 
-    unordered_map<string,string> value_row;
-    list<Graph_Node>::iterator X_node = Alarm.get_nth_node(0); 
-    for (int i=0 ; i < data_row.size() ; i ++){
-        if (comments) cout<<Alarm.get_nth_node(i)->get_name()<<" "<<data_row[i]<<endl;
-        value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i]; 
-        if (data_row[i]=="\"?\"") X_node = Alarm.get_nth_node(i); 
-    }
-    if (comments) cout<<X_node->get_name() ;
-    // cout<<value_row["\"A\""]<<endl ;
-    vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
-    // cout<<prob_table_x[0]<<" "<<prob_table_x[1]<<endl ;
-    vec_print(prob_table_x) ;
-    if (comments) cout<<data_row[1]<<endl  ;
-	if (comments) cout<<"Okay, that's all! \n";
+    for (int all_data = 0 ; all_data < data.size() ; all_data++){
+        vector<string> data_row = data[all_data]; 
+        unordered_map<string,string> value_row;
+        list<Graph_Node>::iterator X_node = Alarm.get_nth_node(0); 
+        for (int i=0 ; i < data_row.size() ; i ++){
+            if (comments) cout<<Alarm.get_nth_node(i)->get_name()<<" "<<data_row[i]<<endl;
+            value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i]; 
+            if (data_row[i]=="\"?\"") X_node = Alarm.get_nth_node(i); 
+        }
+        if (comments) cout<<X_node->get_name() ;
+        // cout<<value_row["\"A\""]<<endl ;
+        vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
+        if (comments) check_here(1) ;
+        int nvals_x= X_node->get_nvalues() ;
+        vector<string> vals_x = X_node->get_values() ;
+        for (int i=0  ; i < nvals_x ; i++){
 
+            value_row[X_node->get_name()] = vals_x[i] ;
+            update_cpt(prob_table_x[i],&Alarm , value_row) ;
+        }
+    }
+    // cout<<prob_table_x[0]<<" "<<prob_table_x[1]<<endl ;
+    // vec_print(X_node->get_CPT()) ;
+    // if (display) vec_print(prob_table_x) ;
+    // if (comments) cout<<data_row[1]<<endl  ;
+
+    int net_size = Alarm.netSize() ;
+    for (int node_num  =0 ; node_num < net_size; node_num++){
+        vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
+    }
+	if (comments) cout<<"Okay, that's all! \n";
+    
 }

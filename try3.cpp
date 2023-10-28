@@ -6,7 +6,9 @@
 #include <sstream>
 #include <cstdlib>
 #include <unordered_map> 
-
+#include <ctime>
+#include <chrono>
+using namespace std::chrono;
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
 using namespace std;
 #define vec_print(v) {cout<<#v<<" : " ;for(int rnd_i = 0 ; rnd_i < v.size() ; rnd_i ++) {cout<<v[rnd_i]<<" " ;} cout<<endl  ;}
@@ -41,8 +43,6 @@ public:
     void set_sum_cpt(){
         n_const = CPT.size() ;
         for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(1) ;
-
-
     }
 
 	string get_name()
@@ -93,10 +93,25 @@ public:
     void update_sum_cpt(int index_change, float val_change  ){
         if (comments) what_is(sum_cpt.size()) ;
         sum_cpt[index_change]+=val_change ;
-        n_const += val_change ; 
+        // n_const += val_change ; 
     }
     void rewrite_cpt(){
-        for (int i=0 ; i < sum_cpt.size() ; i++) CPT[i] = sum_cpt[i]/n_const ;
+        // 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8
+        int prod_except_me = CPT.size()/nvalues ; 
+        vector<float> vector_norm  ; 
+        for (int i=0; i < prod_except_me ; i++){
+            float norm_const  = 0 ; 
+            for (int j=0 ; j < nvalues ; j++){
+                norm_const += sum_cpt[j*prod_except_me + i] ;
+            }
+            vector_norm.push_back(norm_const) ;
+        }
+        if (comments) cout<<Node_Name<<" hi\n";
+        if (comments) vec_print(CPT);
+        if (comments) vec_print(sum_cpt);
+        if (comments) vec_print(vector_norm);
+        for (int i=0 ; i < sum_cpt.size() ; i++) CPT[i] = sum_cpt[i]/vector_norm[i%prod_except_me] ;
+        // vec_print(CPT);
     }
 
 
@@ -341,7 +356,6 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
         index_in_cpt += parents_index[i]*running_product ; 
         running_product *= nvalues_parents[i] ;
     }
-    int running_product_parent = running_product;
     if (comments) cout<<"Here it works 34"<<endl;
     if (comments) what_is(X->get_name());
     vector<int> children_index = X->get_children() ; // this is the indices of the children
@@ -444,33 +458,9 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
 
     // now normalize the prob table 
     if (comments) vec_print(x_prob_table) ;
-    vector<float> norm_const_vec;
-    what_is(x_name);
-    // what_is(running_product_parent);
-    // vec_print(x_prob_table);
-    for (int j = 0; j < running_product_parent; j++){
-        float norm_cnst = 0 ; 
-        // cout<<"in here with the value of j= "<<j<<endl;
-        for (int i = 0; i < nvalues_x; i++){
-            // what_is(norm_cnst);
-            norm_cnst += x_prob_table[j + running_product_parent*i];
-        }
-        what_is(norm_cnst);
-        norm_const_vec.push_back(norm_cnst);
-    }
-    // int norm_cnst =0; 
-    vec_print(norm_const_vec);
-    cout<<"out of here "<<endl;
+    float norm_cnst = 0 ; 
     for (int i=0 ; i< x_prob_table.size() ; i++) norm_cnst+= x_prob_table[i] ;
     for (int i=0 ; i<x_prob_table.size() ; i++) x_prob_table[i] = x_prob_table[i]/norm_cnst ;
-    // for (int j = 0; j < running_product_parent; j++){
-    //     // cout<<"value of j = "<<j<<endl;
-    //     for (int i = 0; i < nvalues_x; i++){
-    //        x_prob_table[j + running_product_parent*i] /= norm_const_vec[j];
-    //     }
-    // }
-    // cout<<"out here"<<endl;
-    // vec_print(x_prob_table);
     return x_prob_table ;
     // cpt_X[inde]
     // <1,2,0,3>
@@ -516,13 +506,13 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,strin
         }
         if (comments) check_here(3)  ;
 
-        int index_in_cpt1 = 0 ; // this is the index in cpt that is to be used
+        int index_in_cpt = 0 ; // this is the index in cpt that is to be used
         int running_product = 1 ; 
         for (int i= parents_size-1 ; i >=0 ; i--){
-            index_in_cpt1 += parents_index[i]*running_product ; 
+            index_in_cpt += parents_index[i]*running_product ; 
             running_product *= nvalues_parents[i] ;
         }
-        int final_index  = index_in_cpt1 + running_product * index_val ; 
+        int final_index  = index_in_cpt + running_product * index_val ; 
         if (comments) check_here(4)  ;
         int size_cpt = X_update->get_CPT().size() ;
         if (comments) what_is(size_cpt) ;
@@ -536,19 +526,46 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,strin
 }
 
 
+float compute_score(network* Gold_Alarm, network* Alarm){
+    int size_net =Alarm->netSize() ;
+    float score =0 ;
+    for (int i=0 ; i < size_net  ; i++){
+        list<Graph_Node>::iterator alarm_node = Alarm->get_nth_node(i) ;
+        list<Graph_Node>::iterator gold_node = Gold_Alarm->get_nth_node(i) ;
+        vector<float> v_our = alarm_node->get_CPT() ;
+        vector<float> v_gold = gold_node->get_CPT() ;
+        for (int i=0 ; i < v_our.size() ; i++){
+            score+= abs(v_our[i]-v_gold[i])  ;
+        }
+
+    }
+    return score ;
+
+}
+
 int main()
 {
 	network Alarm;
+	network Gold_Alarm;
     vector<vector<string>> data ;
 	if (testing) Alarm=read_network("testcase1.bif");
     if (testing)  data = parse_data("testcase1.dat"); 
     if (not testing)  Alarm=read_network("alarm.bif");
     if (not testing) data  = parse_data("records.dat"); 
+    if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
 
 
 
 
     //isme data[0] ki jagah data[i] kardena
+    auto start_time = std::chrono::system_clock::now();
+    auto end_time = std::chrono::system_clock::now();
+    int number_iterations = 30 ;
+    int total_cnt = 0 ;
+    // while (end_time-star)
+    // cout<<((std::chrono::duration_cast<std::chrono::milliseconds>(end_time.time_since_epoch()).count() - std::chrono::duration_cast<std::chrono::milliseconds>(start_time.time_since_epoch()).count())  < 10000)<<endl ;
+    while(total_cnt < number_iterations){
+    total_cnt++;
     for (int all_data = 0 ; all_data < data.size() ; all_data++){
         vector<string> data_row = data[all_data];
         if (testing && comments) vec_print(data_row) ; 
@@ -565,7 +582,6 @@ int main()
         vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
         if (comments) check_here(1) ;
         int nvals_x= X_node->get_nvalues() ;
-        if (comments) check_here(7);
         vector<string> vals_x = X_node->get_values() ;
         for (int i=0  ; i < nvals_x ; i++){
 
@@ -573,18 +589,21 @@ int main()
             update_cpt(prob_table_x[i],&Alarm , value_row) ;
         }
     }
-    // cout<<"bahar hoon"<<endl;
+    }
+
+
     // cout<<prob_table_x[0]<<" "<<prob_table_x[1]<<endl ;
     // vec_print(X_node->get_CPT()) ;
     // if (display) vec_print(prob_table_x) ;
     // if (comments) cout<<data_row[1]<<endl  ;
-
+    int score = compute_score(&Gold_Alarm,&Alarm) ;
+    what_is(score) ;
     int net_size = Alarm.netSize() ;
-    for (int node_num  =0 ; node_num < net_size; node_num++){
+    if (comments) {for (int node_num  =0 ; node_num < net_size; node_num++){
         // vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
         cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;
         vec_print_no_name(Alarm.get_nth_node(node_num)->get_CPT()) ;
     }
-	if (comments) cout<<"Okay, that's all! \n";
+	if (comments) cout<<"Okay, that's all! \n";}
     
 }

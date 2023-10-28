@@ -29,7 +29,7 @@ private:
 	vector<string> values; // Categories of possible values
 	vector<float> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
     vector<float> sum_cpt ;
-    float n_const ;
+    // float n_const ;
 
 public:
 	// Constructor- a node is initialised with its name and its categories
@@ -41,8 +41,8 @@ public:
 	}
 
     void set_sum_cpt(){
-        n_const = CPT.size() ;
-        for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(1) ;
+        // n_const = CPT.size() ;
+        for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(0.0001) ;
     }
 
 	string get_name()
@@ -560,7 +560,7 @@ int main()
     //isme data[0] ki jagah data[i] kardena
     auto start_time = std::chrono::system_clock::now();
     auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 30 ;
+    int number_iterations = 10 ;
     int total_cnt = 0 ;
     // while (end_time-star)
     // cout<<((std::chrono::duration_cast<std::chrono::milliseconds>(end_time.time_since_epoch()).count() - std::chrono::duration_cast<std::chrono::milliseconds>(start_time.time_since_epoch()).count())  < 10000)<<endl ;
@@ -596,7 +596,7 @@ int main()
     // vec_print(X_node->get_CPT()) ;
     // if (display) vec_print(prob_table_x) ;
     // if (comments) cout<<data_row[1]<<endl  ;
-    int score = compute_score(&Gold_Alarm,&Alarm) ;
+    float score = compute_score(&Gold_Alarm,&Alarm) ;
     what_is(score) ;
     int net_size = Alarm.netSize() ;
     if (comments) {for (int node_num  =0 ; node_num < net_size; node_num++){

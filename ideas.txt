@@ -1,7 +1,9 @@
-1. Intiailize not using uniform values but read the input file once to intialize smartly (ignore question marks and then count)
-2. Improve the data structure 
+1. Intiailize not using uniform values but read the input file once to intialize smartly (ignore question marks and then count) -
+2. Improve the data structure / parser 
 3. Our iterations are too slow ? why ? 
-4. What if there are no question marks ? 
+4. What if there are no question marks ? -> bug prone  
 5. Also the places where the data point is low in number , just read that more times ? not everything else ,in which we are already very confident about the values ?
 6. Read code from github 2 years ago ? 
 7. Explore new ideas, read about how to train a bayesian network
+8. Are some values given in the bif file that are fixed ? -> done 
+9. Inference using random methods 

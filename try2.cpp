@@ -10,11 +10,13 @@
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
 using namespace std;
 #define vec_print(v) {cout<<#v<<" : " ;for(int rnd_i = 0 ; rnd_i < v.size() ; rnd_i ++) {cout<<v[rnd_i]<<" " ;} cout<<endl  ;}
+#define vec_print_no_name(v) {for(int rnd_i = 0 ; rnd_i < v.size() ; rnd_i ++) {cout<<v[rnd_i]<<" " ;} cout<<endl  ;}
 #define what_is(x) {cout<<#x<<" is "<<x<<endl ;}
 #define check_here(x) {cout<<"Here it works "<<x<<endl ;}
 // Our graph consists of a list of nodes where each node is represented as follows:
 bool comments = false ;
 bool display = true ; 
+bool testing  = false ;
 class Graph_Node{
 
 private:
@@ -340,10 +342,10 @@ vector<float> find_probability_given_all(list<Graph_Node>::iterator X , unordere
         running_product *= nvalues_parents[i] ;
     }
     if (comments) cout<<"Here it works 34"<<endl;
-
+    if (comments) what_is(X->get_name());
     vector<int> children_index = X->get_children() ; // this is the indices of the children
     int number_childrens  = children_index.size() ; 
-
+    if (comments) what_is(number_childrens);
 
     int nvalues_x = X->get_nvalues() ;
     string x_name = X->get_name() ;   
@@ -512,13 +514,20 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,strin
 int main()
 {
 	network Alarm;
-	Alarm=read_network("alarm.bif");
-    vector<vector<string>> data  = parse_data("records.dat"); 
+    vector<vector<string>> data ;
+	if (testing) Alarm=read_network("testcase1.bif");
+    if (testing)  data = parse_data("testcase1.dat"); 
+    if (not testing)  Alarm=read_network("alarm.bif");
+    if (not testing) data  = parse_data("records.dat"); 
+
+
 
 
     //isme data[0] ki jagah data[i] kardena
     for (int all_data = 0 ; all_data < data.size() ; all_data++){
-        vector<string> data_row = data[all_data]; 
+        vector<string> data_row = data[all_data];
+        if (testing && comments) vec_print(data_row) ; 
+        if (testing && comments) what_is(Alarm.netSize()) ;
         unordered_map<string,string> value_row;
         list<Graph_Node>::iterator X_node = Alarm.get_nth_node(0); 
         for (int i=0 ; i < data_row.size() ; i ++){
@@ -526,7 +535,7 @@ int main()
             value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i]; 
             if (data_row[i]=="\"?\"") X_node = Alarm.get_nth_node(i); 
         }
-        if (comments) cout<<X_node->get_name() ;
+        if (comments) what_is(X_node->get_name()) ;
         // cout<<value_row["\"A\""]<<endl ;
         vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
         if (comments) check_here(1) ;
@@ -545,7 +554,9 @@ int main()
 
     int net_size = Alarm.netSize() ;
     for (int node_num  =0 ; node_num < net_size; node_num++){
-        vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
+        // vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
+        cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;
+        vec_print_no_name(Alarm.get_nth_node(node_num)->get_CPT()) ;
     }
 	if (comments) cout<<"Okay, that's all! \n";
     

@@ -132,10 +132,10 @@ public:
 class network{
 
 	// list <Graph_Node> Pres_Graph;
+    vector<Graph_Node> Pres_Graph;
 
 public:
-    vector<Graph_Node> Pres_Graph;
-    // unordered_map<string,int> name_to_index;
+    unordered_map<string,int> name_to_index;
 	int addNode(Graph_Node node)
 	{
 		Pres_Graph.push_back(node);
@@ -158,11 +158,12 @@ public:
         //     count++;
         // }
         // return -1;
-        for (int i = 0; i < Pres_Graph.size(); i++){
-            if (Pres_Graph[i].get_name() == val_name){
-                return i;
-            }
-        }
+        // for (int i = 0; i < Pres_Graph.size(); i++){
+        //     if (Pres_Graph[i].get_name() == val_name){
+        //         return i;
+        //     }
+        // }
+        return name_to_index[val_name];
     }
 // get the node at nth index
     Graph_Node* get_nth_node(int n)
@@ -225,7 +226,7 @@ network read_network(string filename)
     				}
      				Graph_Node new_node(name,values.size(),values);
      				int pos=Alarm.addNode(new_node);
-                    // Alarm.name_to_index[name] = count;
+                    Alarm.name_to_index[name] = count;
                     count += 1;
 
      				
@@ -598,20 +599,17 @@ int main()
     // if (display) vec_print(prob_table_x) ;
     // if (comments) cout<<data_row[1]<<endl  ;
     float score;
-    if (comments) score = compute_score(&Gold_Alarm,&Alarm) ;
-    if (comments) check_here("Ye khatam hai");
-    if (comments) what_is(score) ;
     score = compute_score(&Gold_Alarm,&Alarm) ;
-    check_here("Ye khatam hai");
+    if (comments) check_here("Ye khatam hai");
     what_is(score) ;
     int net_size = Alarm.netSize() ;
     // vec_print(Alarm.get_nth_node(0).get_CPT());
     // if (comments) vec_print(Alarm.Pres_Graph[0].get_CPT());
-    {for (int node_num  =0 ; node_num < net_size; node_num++){
+    // {for (int node_num  =0 ; node_num < net_size; node_num++){
         // vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
-        cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;
-        vec_print_no_name(Alarm.get_nth_node(node_num)->get_CPT()) ;
-    }
-	if (comments) cout<<"Okay, that's all! \n";}
+        // cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;
+        // vec_print_no_name(Alarm.get_nth_node(node_num)->get_CPT()) ;
+    // }
+	// if (comments) cout<<"Okay, that's all! \n";}
     
 }

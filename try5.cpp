@@ -121,6 +121,8 @@ public:
             }
             vector_norm.push_back(norm_const) ;
         }
+        // vec_print(sum_cpt);
+        // vec_print(vector_norm);
         // if (comments) cout<<Node_Name<<" hi\n";
         // if (comments) vec_print(CPT);
         // if (comments) vec_print(sum_cpt);
@@ -138,6 +140,7 @@ class network{
 
 public:
     unordered_map<string,int> name_to_index;
+    vector<unordered_map<string,int> > value_to_index_for_nodes;
 	int addNode(Graph_Node node)
 	{
 		Pres_Graph.push_back(node);
@@ -219,17 +222,21 @@ network read_network(string filename)
      					ss2>>temp;
      				}
      				values.clear();
+                    int count_values = 0;
+                    unordered_map<string,int> value_mapping_to_index;
      				while(temp.compare("};")!=0)
      				{
 						// std::cout<<temp<<std::endl;
      					values.push_back(temp);
-     					
+     					value_mapping_to_index[temp] = count_values;
      					ss2>>temp;
+                        count_values += 1;
     				}
      				Graph_Node new_node(name,values.size(),values);
      				int pos=Alarm.addNode(new_node);
                     Alarm.name_to_index[name] = count;
                     count += 1;
+                    Alarm.value_to_index_for_nodes.push_back(value_mapping_to_index);
 
      				
      		}
@@ -309,17 +316,23 @@ vector<vector<string> > parse_data(string filename, network* Alarm ){
 	while (getline(ss, s, ' ')) {
  
         // store token string in the vector
-        int ind = -1;
-        for (int i = 0; i < Alarm->get_nth_node(count)->get_nvalues(); i++){
-            if (s == Alarm->get_nth_node(count)->get_values()[i]) {ind = i; break;}
-        }
-        if (ind == -1){
+        if (s == "\"?\""){
             temp_vect.push_back(s);
-            // cout<<s<<" "<<Alarm->get_nth_node(count)->get_name()<<endl;
         }
         else{
-            temp_vect.push_back(to_string(ind));
+            temp_vect.push_back(to_string(Alarm->value_to_index_for_nodes[count][s]));
         }
+        // int ind = -1;
+        // for (int i = 0; i < Alarm->get_nth_node(count)->get_nvalues(); i++){
+        //     if (s == Alarm->get_nth_node(count)->get_values()[i]) {ind = i; break;}
+        // }
+        // if (ind == -1){
+        //     temp_vect.push_back(s);
+        //     // cout<<s<<" "<<Alarm->get_nth_node(count)->get_name()<<endl;
+        // }
+        // else{
+        //     temp_vect.push_back(to_string(ind));
+        // }
         count += 1;
     }
 	parsed_data.push_back(temp_vect) ;
@@ -557,16 +570,15 @@ int main()
 	if (testing) Alarm=read_network("small_testcase.bif");
     if (testing)  data = parse_data("small_testcase.dat", &Alarm); 
     if (not testing)  Alarm=read_network("alarm.bif");
-    if (not testing) data  = parse_data("records.dat", &Alarm); 
-    if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
+    if (not testing) data  = parse_data("records_gen.dat", &Alarm); 
+    if (not testing) Gold_Alarm = read_network("gold_gen.bif") ;
 
     //isme data[0] ki jagah data[i] kardena
     // auto start_time = std::chrono::system_clock::now();
     // auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 1 ;
+    int number_iterations = 10 ;
     int total_cnt = 0 ;
-    // while (end_time-star)
-    // cout<<((std::chrono::duration_cast<std::chrono::milliseconds>(end_time.time_since_epoch()).count() - std::chrono::duration_cast<std::chrono::milliseconds>(start_time.time_since_epoch()).count())  < 10000)<<endl ;
+    
     while(total_cnt < number_iterations){
     total_cnt++;
     cout<<"iteration number going on is "<<total_cnt<<endl;
@@ -577,27 +589,11 @@ int main()
         if (testing && comments) what_is(Alarm.netSize()) ;
         unordered_map<string,string> value_row;
         Graph_Node* X_node = Alarm.get_nth_node(0); 
-        // int ind ;
         for (int i=0 ; i < data_row.size() ; i ++){
-            // if (comments) cout<<Alarm.get_nth_node(i)->get_name()<<" "<<data_row[i]<<endl;
-            // vector <string> values_node = Alarm.get_nth_node(i)->get_values();
             if (data_row[i]=="\"?\"") {
-                // value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i];
                 X_node = Alarm.get_nth_node(i);
             }
-            // else{
-            //     for (int k = 0; k < Alarm.get_nth_node(i)->get_nvalues(); k++){
-            //         if (data_row[i] == values_node[k]){
-            //             ind = k;
-            //             break;
-            //         }
-            //     }
-            //     value_row[Alarm.get_nth_node(i)->get_name()] = to_string(ind); 
-            // }
             value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i];
-            // cout<<Alarm.get_nth_node(i)->get_name()<<": "<<value_row[Alarm.get_nth_node(i)->get_name()]<<endl;
-            // vec_print(data_row);
-            // if (data_row[i]=="\"?\"") X_node = Alarm.get_nth_node(i); 
         }
         if (comments) what_is(X_node->get_name()) ;
         vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
@@ -623,10 +619,9 @@ int main()
     score = compute_score(&Gold_Alarm,&Alarm) ;
     if (comments) check_here("Ye khatam hai");
     what_is(score) ;
-    // vec_print(Alarm.get_nth_node(1)->get_values());
     int net_size = Alarm.netSize() ;
     // {for (int node_num  =0 ; node_num < net_size; node_num++){
-    //     vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
+    //     // vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
     //     cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;
     //     vec_print_no_name(Alarm.get_nth_node(node_num)->get_CPT()) ;
     // }

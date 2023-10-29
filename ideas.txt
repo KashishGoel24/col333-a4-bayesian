@@ -7,3 +7,8 @@
 7. Explore new ideas, read about how to train a bayesian network
 8. Are some values given in the bif file that are fixed ? -> done 
 9. Inference using random methods 
+
+
+Possible improvement for iterations : 
+1. update cpt is taking lot of time in which rewrite cpt is taking majority of the time 
+2. can do something so that dont have to make value row again and again

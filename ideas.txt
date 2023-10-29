@@ -12,3 +12,8 @@
 Possible improvement for iterations : 
 1. update cpt is taking lot of time in which rewrite cpt is taking majority of the time 
 2. can do something so that dont have to make value row again and again
+
+
+to fix rewrite cpt: 
+we can make vector norm an attribute of every node and when using the function update sum cpt, we can update the norm const at that position
+we can initialise the norm const according to the initial values of sum cpt

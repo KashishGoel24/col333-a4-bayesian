@@ -425,16 +425,19 @@ void write_to_solved(string filename_read, network *Alarm, string filename_write
     bool prev_probab ;
     int cnt=0 ;
     int net_size = Alarm->netSize() ;
+    int cnntt = 0 ;
     while(!myfile_read.eof()){
+        if (cnntt!=0) MyFile_write<<endl ;
+        cnntt++ ;
         getline (myfile_read,line) ;
-        if (not prev_probab) MyFile_write<<line<<endl ;
+        if (not prev_probab) MyFile_write<<line ;
         else {
             Graph_Node* node_cpt = Alarm->get_nth_node(cnt) ; 
             vector<float> intended_cpt = node_cpt->get_CPT();
             MyFile_write<<"\ttable " ;
             for (int i=0 ; i < intended_cpt.size() ; i++) MyFile_write<<intended_cpt[i]<<" " ;
             MyFile_write<<";" ;
-            MyFile_write<<endl; 
+            // MyFile_write<<endl; 
 
             cnt++ ;
         }
@@ -480,7 +483,7 @@ int main()
     int total_cnt = 0 ;
     int start_time =  time(NULL) ;
     int end_time = time(NULL) ;
-    int total_time_in_sec =15 ; 
+    int total_time_in_sec =10 ; 
     int last_end_time = 0 ;
     while(end_time  - start_time < total_time_in_sec - 2*(end_time - last_end_time)){
     auto rng = std::default_random_engine {};
@@ -512,7 +515,7 @@ int main()
         for (int i=0  ; i < nvals_x ; i++){
             value_row[X_node->get_name()] = i ;
             // bool rewrite = ((rand() % ((total_cnt-1)*data.size() + all_data)) < sqrt((total_cnt)*data.size() + all_data) + 10) ;
-            update_cpt(prob_table_x[i],&Alarm , value_row , (all_data < 0.1*data.size() || (rand()%10 == 1))) ;
+            update_cpt(prob_table_x[i],&Alarm , value_row , (((total_cnt==0) && (all_data < (data.size()/10))) || (rand()%10 == 1))) ;
             // update_cpt(prob_table_x[i],&Alarm , value_row , true) ;
 
         }

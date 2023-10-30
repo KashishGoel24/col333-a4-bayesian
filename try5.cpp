@@ -8,6 +8,10 @@
 #include <unordered_map> 
 #include <ctime>
 #include <chrono>
+#include <algorithm>
+#include <random>
+
+
 using namespace std::chrono;
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
 using namespace std;
@@ -139,8 +143,8 @@ class network{
     vector<Graph_Node> Pres_Graph;
 
 public:
-    unordered_map<string,int> name_to_index;
-    vector<unordered_map<string,int> > value_to_index_for_nodes;
+    unordered_map<string,int> name_to_index; // 37 
+    vector<unordered_map<string,int> > value_to_index_for_nodes; // vector ka size 37 hai 
 	int addNode(Graph_Node node)
 	{
 		Pres_Graph.push_back(node);
@@ -228,7 +232,7 @@ network read_network(string filename)
      				{
 						// std::cout<<temp<<std::endl;
      					values.push_back(temp);
-     					value_mapping_to_index[temp] = count_values;
+     					value_mapping_to_index[temp] = count_values; 
      					ss2>>temp;
                         count_values += 1;
     				}
@@ -300,9 +304,9 @@ network read_network(string filename)
   	return Alarm;
 }
 
-vector<vector<string> > parse_data(string filename, network* Alarm ){
+vector<vector<int> > parse_data(string filename, network* Alarm ){
 	
-	vector<vector<string> > parsed_data ; 
+	vector<vector<int> > parsed_data ; 
 
 	string myText;
 	// Read from the text file
@@ -310,17 +314,17 @@ vector<vector<string> > parse_data(string filename, network* Alarm ){
 	// Use a while loop together with the getline() function to read the file line by line
 	while (getline (MyReadFile, myText)) {
 	stringstream ss(myText);
-	vector<string> temp_vect ;
+	vector<int> temp_vect ;
 	string s ;
     int count = 0;
 	while (getline(ss, s, ' ')) {
  
         // store token string in the vector
         if (s == "\"?\""){
-            temp_vect.push_back(s);
+            temp_vect.push_back(-1);
         }
         else{
-            temp_vect.push_back(to_string(Alarm->value_to_index_for_nodes[count][s]));
+            temp_vect.push_back(Alarm->value_to_index_for_nodes[count][s]);
         }
         // int ind = -1;
         // for (int i = 0; i < Alarm->get_nth_node(count)->get_nvalues(); i++){
@@ -345,7 +349,7 @@ vector<vector<string> > parse_data(string filename, network* Alarm ){
 	return parsed_data ;
 }
 
-vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,string> given_values , network* Alarm  ){ // given all ?
+vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,int> given_values , network* Alarm  ){ // given all ?
     // this is just the product probability of X given parents and parents of its children given parents  
     if (comments) cout<<"Here it works"<<endl;
     vector<string>  parents_X = X->get_Parents() ; // this is all the parents
@@ -357,7 +361,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
     for (int i=0 ; i < parents_size ; i++){
         // this loop fills in the parents_index and nvalues_parents 
         string parent = parents_X[i] ; 
-        string val_parent   = given_values[parent]  ; // this is the given value of parent
+        int val_parent   = given_values[parent]  ; // this is the given value of parent
         Graph_Node* parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
         // vector<string> all_possible_values = parent_node->get_values() ; 
         // int ind = -1 ;
@@ -368,7 +372,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
         // }
         // what_is(val_parent);
         // check_here("nhi yeh waala ");
-        parents_index.push_back(stoi(val_parent)) ;
+        parents_index.push_back(val_parent) ;
         nvalues_parents.push_back(parent_node->get_nvalues()) ;
     
     }
@@ -415,7 +419,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
                     }
                 else { 
                     string child_parent = childs_parents[j] ;
-                    string val_child_parent = given_values[child_parent] ;
+                    int val_child_parent = given_values[child_parent] ;
                     
                     Graph_Node* child_parent_node =  Alarm->get_nth_node(Alarm->get_index(child_parent)) ;
                     // vector<string> all_possible_values_child_parent = child_parent_node->get_values() ;
@@ -427,7 +431,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
                     // }
                     // child_parent_value_indices.push_back(ind) ; 
                     // what_is(val_child_parent);
-                    child_parent_value_indices.push_back(stoi(val_child_parent)) ; 
+                    child_parent_value_indices.push_back(val_child_parent) ; 
                     nvalues_child_parents.push_back(child_parent_node->get_nvalues()) ;
 
                 }
@@ -439,7 +443,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
             int running_stuff_mult = 1 ; 
             int index_in_child_cpt = -1  ;
             string name_child = child->get_name() ; 
-            string val_child = given_values[name_child] ;
+            int val_child = given_values[name_child] ;
             vector<string> value_children = child->get_values() ;
             if (comments) cout<<name_child<<endl ;
             if (comments) cout<<"Here it works 9"<<endl;
@@ -452,7 +456,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
             //     }
             // }
             // what_is(val_child);
-            index_in_child_cpt = stoi(val_child);
+            index_in_child_cpt = val_child;
             if (comments) cout<<"index_in_child_cpt is "<<index_in_child_cpt<<endl ;
             if (comments) cout<<"Here it works 10"<<endl;
             if (comments) cout<<"parents size is "<<child_parents_size<<endl ;
@@ -495,7 +499,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,st
     // X.get_CPT();
 }
 
-void update_cpt(float sample_weight , network* Alarm, unordered_map<string,string> given_values){
+void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> given_values){
     int size_net = Alarm->netSize() ;
     if (comments) what_is(size_net) ;
     for (int node_number =0 ; node_number < size_net ; node_number++){
@@ -503,7 +507,7 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,strin
         int number_n_values_x_update = X_update->get_nvalues();
         vector<string> n_values_x_update = X_update->get_values();
         int index_val = -1;
-        index_val = stoi(given_values[X_update->get_name()]);
+        index_val = given_values[X_update->get_name()];
         vector<string> parents_x = X_update->get_Parents() ;
 
 
@@ -513,11 +517,11 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,strin
         for (int i=0 ; i < parents_size ; i++){
             // this loop fills in the parents_index and nvalues_parents 
             string parent = parents_x[i] ; 
-            string val_parent   = given_values[parent]  ; // this is the given value of parent
+            int val_parent   = given_values[parent]  ; // this is the given value of parent
             Graph_Node* parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
             // what_is(val_parent);
             // check_here("yeh waala val p[arent]");
-            parents_index.push_back(stoi(val_parent)) ;
+            parents_index.push_back(val_parent) ;
             nvalues_parents.push_back(parent_node->get_nvalues()) ;
         
         }
@@ -566,31 +570,34 @@ int main()
 {
 	network Alarm;
 	network Gold_Alarm;
-    vector<vector<string> > data ;
+    vector<vector<int> > data ;
 	if (testing) Alarm=read_network("small_testcase.bif");
     if (testing)  data = parse_data("small_testcase.dat", &Alarm); 
     if (not testing)  Alarm=read_network("alarm.bif");
-    if (not testing) data  = parse_data("records_gen.dat", &Alarm); 
-    if (not testing) Gold_Alarm = read_network("gold_gen.bif") ;
+    if (not testing) data  = parse_data("records.dat", &Alarm); 
+    if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
 
     //isme data[0] ki jagah data[i] kardena
     // auto start_time = std::chrono::system_clock::now();
     // auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 10 ;
+    int number_iterations = 2 ;
     int total_cnt = 0 ;
     
     while(total_cnt < number_iterations){
+    auto rng = std::default_random_engine {};
+    std::shuffle(std::begin(data), std::end(data), rng);
+    // data.random()
     total_cnt++;
     cout<<"iteration number going on is "<<total_cnt<<endl;
     for (int all_data = 0 ; all_data < data.size() ; all_data++){
         // cout<<all_data<<endl;
-        vector<string> data_row = data[all_data];
+        vector<int> data_row = data[all_data];
         if (testing && comments) vec_print(data_row) ; 
         if (testing && comments) what_is(Alarm.netSize()) ;
-        unordered_map<string,string> value_row;
+        unordered_map<string,int> value_row;
         Graph_Node* X_node = Alarm.get_nth_node(0); 
         for (int i=0 ; i < data_row.size() ; i ++){
-            if (data_row[i]=="\"?\"") {
+            if (data_row[i]==-1) {
                 X_node = Alarm.get_nth_node(i);
             }
             value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i];
@@ -600,7 +607,7 @@ int main()
         if (comments) check_here(1) ;
         int nvals_x= X_node->get_nvalues() ;
         for (int i=0  ; i < nvals_x ; i++){
-            value_row[X_node->get_name()] = to_string(i) ;
+            value_row[X_node->get_name()] = i ;
             update_cpt(prob_table_x[i],&Alarm , value_row) ;
             if (comments) check_here("all fine ? ")
 

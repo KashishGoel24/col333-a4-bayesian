@@ -1,13 +1,16 @@
-1. Intiailize not using uniform values but read the input file once to intialize smartly (ignore question marks and then count) -
-2. Improve the data structure / parser 
-3. Our iterations are too slow ? why ? 
+1. Intiailize not using uniform values but read the input file once to intialize smartly (ignore question marks and then count) -> done 
+2. Improve the data structure / parser -> done mostly 
+3. Our iterations are too slow ? why ? -> will see where most time is being consumed
 4. What if there are no question marks ? -> bug prone  
 5. Also the places where the data point is low in number , just read that more times ? not everything else ,in which we are already very confident about the values ?
 6. Read code from github 2 years ago ? 
 7. Explore new ideas, read about how to train a bayesian network
 8. Are some values given in the bif file that are fixed ? -> done 
 9. Inference using random methods 
-
+10. Random of vector 
+11. update cpt after minibatches and not after every data row 
+12. rewrite frequently initially and slowly later on ... // sample randomly from 1 to number of iterations happened or something... -> just do something like write always for the starting 10% of data and then write once every 10 iterations 
+13. Parameterize all constants as the function of input parameters
 
 Possible improvement for iterations : 
 1. update cpt is taking lot of time in which rewrite cpt is taking majority of the time 
@@ -17,3 +20,8 @@ Possible improvement for iterations :
 to fix rewrite cpt: 
 we can make vector norm an attribute of every node and when using the function update sum cpt, we can update the norm const at that position
 we can initialise the norm const according to the initial values of sum cpt
+
+things to do : 
+time 2 minute -> no timeout 
+readme 
+write down in solved alarm

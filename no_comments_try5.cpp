@@ -10,6 +10,7 @@
 #include <chrono>
 #include <algorithm>
 #include <random>
+
 using namespace std::chrono;
 // Format checker just assumes you have Alarm.bif and Solved_Alarm.bif (your file) in current directory
 using namespace std;
@@ -468,16 +469,19 @@ int main()
 	if (testing) Alarm=read_network("small_testcase.bif");
     if (testing)  data = parse_data("small_testcase.dat", &Alarm); 
     if (not testing)  Alarm=read_network("alarm.bif");
-    if (not testing) data  = parse_data("records_no_q_mark.dat", &Alarm); 
+    if (not testing) data  = parse_data("records.dat", &Alarm); 
     if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
 
     //isme data[0] ki jagah data[i] kardena
     // auto start_time = std::chrono::system_clock::now();
     // auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 1 ;
+    int number_iterations = 5 ;
     int total_cnt = 0 ;
-    
-    while(total_cnt < number_iterations){
+    int start_time =  time(NULL) ;
+    int end_time = time(NULL) ;
+    int total_time_in_sec =15 ; 
+    int last_end_time = 0 ;
+    while(end_time  - start_time < total_time_in_sec - 2*(end_time - last_end_time)){
     auto rng = std::default_random_engine {};
     std::shuffle(std::begin(data), std::end(data), rng);
     // data.random()
@@ -513,6 +517,9 @@ int main()
         }
     }
     }
+    last_end_time = end_time ;
+    end_time = time(NULL) ;
+    // cout<<end_time-start_time<<endl ;
     }
     float score;
     score = compute_score(&Gold_Alarm,&Alarm) ;

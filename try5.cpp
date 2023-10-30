@@ -71,10 +71,12 @@ public:
 	{
 		return Parents;
 	}
+
 	vector<float> get_CPT()
 	{
 		return CPT;
 	}
+    
 	int get_nvalues()
 	{
 		return nvalues;
@@ -499,7 +501,7 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,in
     // X.get_CPT();
 }
 
-void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> given_values){
+void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> given_values , bool rewrite_now){
     int size_net = Alarm->netSize() ;
     if (comments) what_is(size_net) ;
     for (int node_number =0 ; node_number < size_net ; node_number++){
@@ -540,7 +542,7 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> 
         if (comments) what_is(final_index) ;
         X_update->update_sum_cpt(final_index, sample_weight);
         if (comments) check_here(5)  ;
-        X_update->rewrite_cpt() ;
+        if (rewrite_now) X_update->rewrite_cpt() ;
         if (comments) check_here("all nice ?")
         if (comments) vec_print(X_update->get_CPT());
 
@@ -548,6 +550,36 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> 
     if (comments) check_here(" am bahar ab ");
     if (comments) vec_print(Alarm->get_nth_node(1)->get_CPT());
 }
+
+void write_to_solved(string filename_read, network *Alarm, string filename_write){
+    ofstream MyFile_write(filename_write);
+
+    // Write to the file
+
+    // Close the file
+  	ifstream myfile_read(filename_read); 
+    string line ;
+    bool prev_probab ;
+    int cnt=0 ;
+    int net_size = Alarm->netSize() ;
+    while(!myfile_read.eof()){
+        getline (myfile_read,line) ;
+        if (not prev_probab) MyFile_write<<line<<endl ;
+        else {
+            Graph_Node* node_cpt = Alarm->get_nth_node(cnt) ; 
+            vector<float> intended_cpt = node_cpt->get_CPT();
+            MyFile_write<<"\ttable " ;
+            for (int i=0 ; i < intended_cpt.size() ; i++) MyFile_write<<intended_cpt[i]<<" " ;
+            MyFile_write<<endl; 
+
+            cnt++ ;
+        }
+        if (line.substr(0,11).compare("probability")==0) prev_probab = true;
+        else prev_probab = false; 
+    }
+    MyFile_write.close();
+}
+
 
 float compute_score(network* Gold_Alarm, network* Alarm){
     int size_net =Alarm->netSize() ;
@@ -580,7 +612,7 @@ int main()
     //isme data[0] ki jagah data[i] kardena
     // auto start_time = std::chrono::system_clock::now();
     // auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 2 ;
+    int number_iterations = 1 ;
     int total_cnt = 0 ;
     
     while(total_cnt < number_iterations){
@@ -606,9 +638,13 @@ int main()
         vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
         if (comments) check_here(1) ;
         int nvals_x= X_node->get_nvalues() ;
+
         for (int i=0  ; i < nvals_x ; i++){
             value_row[X_node->get_name()] = i ;
-            update_cpt(prob_table_x[i],&Alarm , value_row) ;
+            // bool rewrite = ((rand() % ((total_cnt-1)*data.size() + all_data)) < sqrt((total_cnt)*data.size() + all_data) + 10) ;
+            update_cpt(prob_table_x[i],&Alarm , value_row , (all_data < 0.1*data.size() || (rand()%10 == 1))) ;
+            // update_cpt(prob_table_x[i],&Alarm , value_row , true) ;
+
             if (comments) check_here("all fine ? ")
 
         }
@@ -627,6 +663,7 @@ int main()
     if (comments) check_here("Ye khatam hai");
     what_is(score) ;
     int net_size = Alarm.netSize() ;
+    write_to_solved("alarm.bif", &Alarm, "solved_alarm.bif") ;
     // {for (int node_num  =0 ; node_num < net_size; node_num++){
     //     // vec_print(Alarm.get_nth_node(node_num)->get_CPT()) ;
     //     cout<<Alarm.get_nth_node(node_num)->get_name()<<" " ;

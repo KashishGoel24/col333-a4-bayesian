@@ -433,6 +433,7 @@ void write_to_solved(string filename_read, network *Alarm, string filename_write
             vector<float> intended_cpt = node_cpt->get_CPT();
             MyFile_write<<"\ttable " ;
             for (int i=0 ; i < intended_cpt.size() ; i++) MyFile_write<<intended_cpt[i]<<" " ;
+            MyFile_write<<";" ;
             MyFile_write<<endl; 
 
             cnt++ ;

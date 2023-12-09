@@ -35,7 +35,9 @@ private:
 	vector<string> values; // Categories of possible values
 	vector<float> CPT; // conditional probability table as a 1-d array . Look for BIF format to understand its meaning
     vector<float> sum_cpt ;
+    vector<float> norm_const_vector;
     float n_const ;
+
 
 public:
 	// Constructor- a node is initialised with its name and its categories
@@ -52,7 +54,18 @@ public:
 
     void set_sum_cpt(){
         n_const = CPT.size() ;
-        for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(0.001) ;
+        for (int i=0 ; i<CPT.size() ; i++) sum_cpt.push_back(0.01) ;
+    }
+
+    void set_norm_const_vec(){
+        int prod_except_me = sum_cpt.size()/nvalues ; 
+        for (int i=0; i < prod_except_me ; i++){
+            float norm_const  = 0 ; 
+            for (int j=0 ; j < nvalues ; j++){
+                norm_const += sum_cpt[j*prod_except_me + i] ;
+            }
+            norm_const_vector.push_back(norm_const) ;
+        }
     }
 
 	string get_name()
@@ -97,21 +110,14 @@ public:
         Children.push_back(new_child_index);
         return 1;
     }
-    void update_sum_cpt(int index_change, float val_change  ){
+    void update_sum_cpt(int index_change, float val_change , int index_without_self ){
+        norm_const_vector[index_without_self] += val_change ;
         sum_cpt[index_change]+=val_change ;
     }
 
     void rewrite_cpt(){
         int prod_except_me = CPT.size()/nvalues ; 
-        vector<float> vector_norm  ; 
-        for (int i=0; i < prod_except_me ; i++){
-            float norm_const  = 0 ; 
-            for (int j=0 ; j < nvalues ; j++){
-                norm_const += sum_cpt[j*prod_except_me + i] ;
-            }
-            vector_norm.push_back(norm_const) ;
-        }
-        for (int i=0 ; i < sum_cpt.size() ; i++) CPT[i] = sum_cpt[i]/vector_norm[i%prod_except_me] ;
+        for (int i=0 ; i < sum_cpt.size() ; i++) CPT[i] = sum_cpt[i]/norm_const_vector[i%prod_except_me] ;
     }
 };
  // The whole network represted as a list of nodes
@@ -246,6 +252,7 @@ network read_network(string filename)
                     
                     listIt->set_CPT(curr_CPT);
                     listIt->set_sum_cpt() ;
+                    listIt->set_norm_const_vec();
 
 
      		}
@@ -305,19 +312,11 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,in
     vector<int> nvalues_parents ; // total number of n values of parents 
     vector<float> cpt_X = X->get_CPT()  ; 
     vector<float> x_prob_table ; // this is to be ultimately returned
-    for (int i=0 ; i < parents_size ; i++){
-        // this loop fills in the parents_index and nvalues_parents 
-        string parent = parents_X[i] ; 
-        int val_parent   = given_values[parent]  ; // this is the given value of parent
-        Graph_Node* parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
-        parents_index.push_back(val_parent) ;
-        nvalues_parents.push_back(parent_node->get_nvalues()) ;
-    }
     int index_in_cpt = 0 ; // this is the index in cpt that is to be used
     int running_product = 1 ; 
     for (int i= parents_size-1 ; i >=0 ; i--){
-        index_in_cpt += parents_index[i]*running_product ; 
-        running_product *= nvalues_parents[i] ;
+        index_in_cpt += given_values[parents_X[i]]*running_product;
+        running_product *= Alarm->get_nth_node(Alarm->get_index(parents_X[i]))->get_nvalues();
     }
     vector<int> children_index = X->get_children() ; // this is the indices of the children
     int number_childrens  = children_index.size() ; 
@@ -331,23 +330,6 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,in
             Graph_Node* child = Alarm->get_nth_node(children_index[i]) ; // this gives the correct linked list node 
             vector<string> childs_parents =  child->get_Parents() ; // this is the vector of parents of the given child
             int child_parents_size = childs_parents.size() ; // this is the number of parents of a child
-            vector<int> child_parent_value_indices  ; 
-            vector<int> nvalues_child_parents ;
-            
-            for (int j=0 ; j < child_parents_size ; j++){
-                if (childs_parents[j]==x_name) {
-                    child_parent_value_indices.push_back(value_x) ;
-                    nvalues_child_parents.push_back(nvalues_x) ;
-                    }
-                else { 
-                    string child_parent = childs_parents[j] ;
-                    int val_child_parent = given_values[child_parent] ;
-                    Graph_Node* child_parent_node =  Alarm->get_nth_node(Alarm->get_index(child_parent)) ;
-                    child_parent_value_indices.push_back(val_child_parent) ; 
-                    nvalues_child_parents.push_back(child_parent_node->get_nvalues()) ;
-
-                }
-            }
             int running_stuff_mult = 1 ; 
             int index_in_child_cpt = -1  ;
             string name_child = child->get_name() ; 
@@ -356,8 +338,13 @@ vector<float> find_probability_given_all(Graph_Node* X , unordered_map<string,in
             index_in_child_cpt = val_child;
             int index_random  = 0 ;
             for (int cnt_1  = child_parents_size-1 ; cnt_1>=0 ;cnt_1-- ){
-                index_random += running_stuff_mult*child_parent_value_indices[cnt_1] ;
-                running_stuff_mult*= nvalues_child_parents[cnt_1] ;
+                if (childs_parents[cnt_1] == x_name){
+                    index_random += running_stuff_mult*value_x;
+                }
+                else{
+                    index_random += running_stuff_mult*given_values[childs_parents[cnt_1]] ;
+                }
+                running_stuff_mult *= Alarm->get_nth_node(Alarm->get_index(childs_parents[cnt_1]))->get_nvalues();
             }
 
             vector<float> child_cpt = child->get_CPT() ;
@@ -388,27 +375,16 @@ void update_cpt(float sample_weight , network* Alarm, unordered_map<string,int> 
         int parents_size = parents_x.size() ; 
         vector<int> parents_index ; // stores what indices values do the parents value are
         vector<int> nvalues_parents ; // total number of n values of parents 
-        for (int i=0 ; i < parents_size ; i++){
-            // this loop fills in the parents_index and nvalues_parents 
-            string parent = parents_x[i] ; 
-            int val_parent   = given_values[parent]  ; // this is the given value of parent
-            Graph_Node* parent_node =  Alarm->get_nth_node(Alarm->get_index(parent)) ; // this is the parent node
-            // what_is(val_parent);
-            // check_here("yeh waala val p[arent]");
-            parents_index.push_back(val_parent) ;
-            nvalues_parents.push_back(parent_node->get_nvalues()) ;
-        
-        }
 
         int index_in_cpt = 0 ; // this is the index in cpt that is to be used
         int running_product = 1 ; 
         for (int i= parents_size-1 ; i >=0 ; i--){
-            index_in_cpt += parents_index[i]*running_product ; 
-            running_product *= nvalues_parents[i] ;
+            index_in_cpt += given_values[parents_x[i]]*running_product;
+            running_product *= Alarm->get_nth_node(Alarm->get_index(parents_x[i]))->get_nvalues();
         }
         int final_index  = index_in_cpt + running_product * index_val ; 
         int size_cpt = X_update->get_CPT().size() ;
-        X_update->update_sum_cpt(final_index, sample_weight);
+        X_update->update_sum_cpt(final_index, sample_weight, index_in_cpt);
         if (rewrite_now) X_update->rewrite_cpt() ;
 
     }
@@ -447,7 +423,6 @@ void write_to_solved(string filename_read, network *Alarm, string filename_write
     MyFile_write.close();
 }
 
-
 float compute_score(network* Gold_Alarm, network* Alarm){
     int size_net =Alarm->netSize() ;
     float score =0 ;
@@ -474,24 +449,31 @@ int main(int argc, char *argv[])
     if (testing)  data = parse_data("small_testcase.dat", &Alarm); 
     if (not testing)  Alarm=read_network(argv[1]);
     if (not testing) data  = parse_data(argv[2], &Alarm); 
-    if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
+    // if (not testing) Gold_Alarm = read_network("gold_alarm.bif") ;
 
     //isme data[0] ki jagah data[i] kardena
     // auto start_time = std::chrono::system_clock::now();
     // auto end_time = std::chrono::system_clock::now();
-    int number_iterations = 5 ;
+    int number_iterations = 10 ;
     int total_cnt = 0 ;
     int start_time =  time(NULL) ;
     int end_time = time(NULL) ;
-    int total_time_in_sec =20 ; 
+    int total_time_in_sec = 115 ; 
     int last_end_time = time(NULL) ;
-    while(end_time  - start_time < total_time_in_sec - (end_time - last_end_time)-2){
+    float score;
+    int total_iters = 0 ;
+    // int fraction_data = 2 ; // idea 4
+    int update_every = 10 ;  // idea 2
+    // int dont_update = 10 ; // idea 3
+    // float weight_sampling = 1 ;
+    while((end_time  - start_time) < (total_time_in_sec - (end_time - last_end_time) - 2)){
     std::default_random_engine rng = std::default_random_engine ();
     std::shuffle(std::begin(data), std::end(data), rng);
     // data.random()
     total_cnt++;
-    cout<<"iteration number going on is "<<total_cnt<<endl;
+    // cout<<"iteration number going on is "<<total_cnt<<endl;
     for (int all_data = 0 ; all_data < data.size() ; all_data++){
+        total_iters++ ;
         // cout<<all_data<<endl;
         vector<int> data_row = data[all_data];
         unordered_map<string,int> value_row;
@@ -504,18 +486,27 @@ int main(int argc, char *argv[])
             }
             value_row[Alarm.get_nth_node(i)->get_name()] = data_row[i];
         }
+
+        // bias  
+        // if (total_iters > 20000) weight_sampling=0.8 ;
+        // if (total_iters > 40000) weight_sampling=0.6 ;
+        // if (total_iters > 60000) weight_sampling=0.5 ;
+        // if (total_iters > 80000) weight_sampling=0.4 ;
+        // if (total_iters > 100000) weight_sampling=0.2 ; // idea 1
         if (not question_mark){
-            update_cpt(1,&Alarm,value_row, (all_data < 0.1*data.size() || (rand()%10 == 1))) ;
+            update_cpt(1,&Alarm,value_row,  (total_iters%update_every == 0)) ;
         }
         else{
         
         vector<float> prob_table_x = find_probability_given_all(X_node,value_row, &Alarm) ;
         int nvals_x= X_node->get_nvalues() ;
 
+
         for (int i=0  ; i < nvals_x ; i++){
             value_row[X_node->get_name()] = i ;
             // bool rewrite = ((rand() % ((total_cnt-1)*data.size() + all_data)) < sqrt((total_cnt)*data.size() + all_data) + 10) ;
-            update_cpt(prob_table_x[i],&Alarm , value_row , (((total_cnt==0) && (all_data < (data.size()/10))) || (rand()%10 == 1))) ;
+            // if ((dont_update < total_iters) && (total_iters < 2*dont_update)) update_cpt(prob_table_x[i] * weight_sampling,&Alarm , value_row , false) ;
+            update_cpt(prob_table_x[i] ,&Alarm , value_row , (total_iters%update_every == 0));
             // update_cpt(prob_table_x[i],&Alarm , value_row , true) ;
 
         }
@@ -523,10 +514,11 @@ int main(int argc, char *argv[])
     }
     last_end_time = end_time ;
     end_time = time(NULL) ;
-    // cout<<end_time-start_time<<endl ;
+    
     }
-    float score;
-    score = compute_score(&Gold_Alarm,&Alarm) ;
-    what_is(score) ;
+
+    int net_size = Alarm.netSize() ;
     write_to_solved(argv[1], &Alarm, "solved_alarm.bif") ;    
+
+    
 }
